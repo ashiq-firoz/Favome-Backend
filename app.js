@@ -50,6 +50,6 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
-console.log("Server up at port 3002")
+console.log(`Server up at port ${process.env.PORT}`)
 
 module.exports = app;
