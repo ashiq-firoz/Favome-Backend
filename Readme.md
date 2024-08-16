@@ -16,6 +16,8 @@ SALT_KEY=  #phonepe salt key
 BACKEND_URL=
 SUCCESS_URL=
 FAILED_URL=
+MAILGUN_API_KEY=
+MAILGUN_DOMAIN=
 ```
 - Install dependencies
 ```

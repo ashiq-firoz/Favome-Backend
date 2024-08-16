@@ -3,6 +3,26 @@ var router = express.Router();
 const axios = require("axios");
 const crypto = require("crypto");
 
+const nodemailer = require("nodemailer")
+const mg = require("nodemailer-mailgun-transport")
+
+const mailgunAuth = {
+  auth: {
+    api_key: process.env.MAILGUN_API_KEY,
+    domain: process.env.MAILGUN_DOMAIN,
+  }
+}
+const smtpTransport = nodemailer.createTransport(mg(mailgunAuth))
+
+let mailOptions = {
+  from: "theslashproject000@gmail.com",
+  to: "ashiqfiroz08@gmail.com",
+  subject: "This is a test",
+  html: `<p>Dear Sir/Madam,</p>
+            <p>This is to confirm your order.</p>
+            <p>Thank you.</p>`,
+};
+
 
 const MERCHANT_ID = process.env.MERCHANT_ID;
 const PHONE_PE_HOST_URL = process.env.PHONE_PE_HOST_URL;
@@ -13,6 +33,18 @@ const SALT_KEY = process.env.SALT_KEY;
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
+});
+
+router.get("/send",(req,res)=>{
+  smtpTransport.sendMail(mailOptions, function(error, response) {
+    if (error) {
+      console.log(error)
+      res.send("fail");
+    } else {
+      console.log("Successfully sent email.")
+      res.send("success");
+    }
+  })
 });
 
 router.post("/order", async(req,res)=>{
