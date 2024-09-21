@@ -4,7 +4,7 @@ const axios = require("axios");
 const crypto = require("crypto");
 
 
-const MAILSERVER_URL = procee.env.MAILSERVER_URL;
+const MAILSERVER_URL = process.env.MAILSERVER_URL;
 const MERCHANT_ID = process.env.MERCHANT_ID;
 const PHONE_PE_HOST_URL = process.env.PHONE_PE_HOST_URL;
 const SALT_INDEX = process.env.SALT_INDEX;
@@ -20,7 +20,7 @@ router.get('/', function(req, res, next) {
 async function  SendMail(name,address,email,product,contact){
   try {
    
-    const url = new URL('https://script.google.com/macros/s/AKfycbxaKkirLloomJ_v6Pq2i_8D4oLEbJAG9WF8EwLNrhffgP-9zbdnjlQxtVHtOTBDWlHmpQ/exec');
+    const url = new URL(MAILSERVER_URL);
     url.searchParams.append('name', name);
     url.searchParams.append('email', email);
     url.searchParams.append('address', address);
