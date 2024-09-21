@@ -3,27 +3,8 @@ var router = express.Router();
 const axios = require("axios");
 const crypto = require("crypto");
 
-const nodemailer = require("nodemailer")
-const mg = require("nodemailer-mailgun-transport")
 
-const mailgunAuth = {
-  auth: {
-    api_key: process.env.MAILGUN_API_KEY,
-    domain: process.env.MAILGUN_DOMAIN,
-  }
-}
-const smtpTransport = nodemailer.createTransport(mg(mailgunAuth))
-
-let mailOptions = {
-  from: "theslashproject000@gmail.com",
-  to: "ashiqfiroz08@gmail.com",
-  subject: "This is a test",
-  html: `<p>Dear Sir/Madam,</p>
-            <p>This is to confirm your order.</p>
-            <p>Thank you.</p>`,
-};
-
-
+const MAILSERVER_URL = procee.env.MAILSERVER_URL;
 const MERCHANT_ID = process.env.MERCHANT_ID;
 const PHONE_PE_HOST_URL = process.env.PHONE_PE_HOST_URL;
 const SALT_INDEX = process.env.SALT_INDEX;
@@ -35,27 +16,51 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-router.get("/send",(req,res)=>{
-  smtpTransport.sendMail(mailOptions, function(error, response) {
-    if (error) {
-      console.log(error)
-      res.send("fail");
-    } else {
-      console.log("Successfully sent email.")
-      res.send("success");
-    }
-  })
-});
+
+async function  SendMail(name,address,email,product,contact){
+  try {
+   
+    const url = new URL('https://script.google.com/macros/s/AKfycbxaKkirLloomJ_v6Pq2i_8D4oLEbJAG9WF8EwLNrhffgP-9zbdnjlQxtVHtOTBDWlHmpQ/exec');
+    url.searchParams.append('name', name);
+    url.searchParams.append('email', email);
+    url.searchParams.append('address', address);
+    url.searchParams.append('product', product);
+    url.searchParams.append('contact', contact);
+
+    // Send GET request to the Google Apps Script
+    const response = await axios.post(url.toString());
+
+    // res.json({
+    //   success: true,
+    //   data: response.data
+    // });
+    
+  } catch (error) {
+    console.error('Error sending request to Google Apps Script:', error);
+    // res.status(500).json({
+    //   success: false,
+    //   error: 'Failed to send request to Google Apps Script'
+    // });
+  }
+}
+
+
 
 router.post("/order", async(req,res)=>{
   try{
     let transactionid = req.body.transactionId
+    const name = req.body.name;
+    const email = req.body.email;
+    const address = req.body.address;
+    const product = req.body.product;
+    const contact = req.body.phone;
+    
     const data = {
       merchantId:MERCHANT_ID,
       merchantTransactionId: transactionid,
       name:req.body.name,
       amount:req.body.amount * 100,
-      redirectUrl:`${process.env.BACKEND_URL}/status?id=${transactionid}`,
+      redirectUrl:`${process.env.BACKEND_URL}/status?id=${transactionid}&name=${name}&email=${email}&address=${address}&product=${product}&contact=${contact}`,
       redirectMode: "POST",
       mobileNumber: req.body.phone,
       paymentInstrument : {
@@ -102,6 +107,12 @@ router.post("/order", async(req,res)=>{
 
 router.post("/status", async(req,res)=>{
   const merchantTransactionId = req.query.id;
+  const name = req.query.name;
+  const email = req.query.email;
+  const address = req.query.address;
+  const product = req.query.product;
+  const contact = req.query.phone;
+
   const status_url = process.env.STATUS_URL+`/${MERCHANT_ID}/${merchantTransactionId}`;
 
   const string = `/pg/v1/status/${MERCHANT_ID}/${merchantTransactionId}` + SALT_KEY;
@@ -122,6 +133,7 @@ router.post("/status", async(req,res)=>{
 
   axios.request(options).then(function (response){
     if (response.data.success === true){
+      SendMail(name,address,email,product,contact);
       return res.redirect(process.env.SUCCESS_URL);
     }
 
