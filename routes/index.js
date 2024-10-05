@@ -111,7 +111,7 @@ router.post("/status", async(req,res)=>{
   const email = req.query.email;
   const address = req.query.address;
   const product = req.query.product;
-  const contact = req.query.phone;
+  const contact = req.query.contact;
 
   const status_url = process.env.STATUS_URL+`/${MERCHANT_ID}/${merchantTransactionId}`;
 
