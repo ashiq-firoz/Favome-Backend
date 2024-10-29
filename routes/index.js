@@ -210,7 +210,7 @@ router.post("/status", async(req,res)=>{
   const customerName = req.query.customerName;
   const companyAddress = req.query.companyAddress;
   const token = req.query.token;
-  const logourl = req.query.logourl+token;
+  const logourl = req.query.logourl+"&token="+token;
   const product = req.query.product;
   const mobile = req.query.mobile;
   const companyEmail = req.query.companyEmail;
