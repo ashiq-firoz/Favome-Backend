@@ -217,7 +217,7 @@ router.post("/status", async(req,res)=>{
   const whatsapp = req.query.whatsapp;
   const googleProfileLink = req.query.googleProfileLink;
   const areaManager = req.query.areaManager;
-  const remarks = req.query.mobile;
+  const remarks = req.query.remarks;
 
   // console.log(
   //   customerName+" | "+
