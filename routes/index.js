@@ -95,7 +95,30 @@ async function SendMail({
 
     // Send POST request to the mail server
     const response = await axios.post(url.toString());
+  //   console.log(
+  //   customerName+" | "+
+  //       companyAddress+" | "+
+  //       mobile+" | "+
+  //       product+" | "+
+  //       companyEmail+" | "+
+  //       whatsapp+" | "+
+  //       googleProfileLink+" | "+
+  //       logourl+" | "+
+  //       areaManager+" | "+
+  //       remarks
+  // )
     
+    await  SendNotification({
+      customerName,
+      companyAddress,
+      mobile,
+      product,
+      companyEmail,
+      whatsapp,
+      googleProfileLink,
+      logourl,
+      areaManager,
+      remarks});
     return {
       success: true,
       data: response.data
@@ -115,32 +138,35 @@ async function SendMail({
 
 router.post("/order", async(req,res)=>{
   try{
+    console.log(req.body)
     let transactionid = req.body.transactionId
-    const customerName = req.body.customerName;
-    const companyAddress = req.body.companyAddress;
+    const customerName = req.body.customerName.replace(/\s/g, "%20");
+    const companyAddress = req.body.companyAddress.replace(/\s/g, "%20");
     const mobile = req.body.mobile;
-    const product = req.body.product;
+    const product = req.body.products;
     const companyEmail = req.body.companyEmail;
     const whatsapp = req.body.whatsapp;
     const googleProfileLink = req.body.googleProfileLink;
-    const logourl = req.body.logourl;
-    const areaManager = req.body.areaManager;
-    const remarks = req.body.remarks;
-
+    const logourl = req.body.companyLogo;
+    const areaManager = req.body.areaManager.replace(/\s/g, "%20");
+    const remarks = req.body.remarks.replace(/\s/g, "%20");
+    
+    console.log(`${process.env.BACKEND_URL}/status?id=${transactionid}&customerName=${customerName}&companyAddress=${companyAddress}&logourl=${logourl}&product=${product}&mobile=${mobile}&companyEmail=${companyEmail}&whatsapp=${whatsapp}&googleProfileLink=${googleProfileLink}&areaManager=${areaManager}&remarks=${remarks}`)
     
     const data = {
       merchantId:MERCHANT_ID,
       merchantTransactionId: transactionid,
-      name:req.body.name,
+      name:req.body.customerName,
       amount:req.body.amount * 100,
       redirectUrl:`${process.env.BACKEND_URL}/status?id=${transactionid}&customerName=${customerName}&companyAddress=${companyAddress}&logourl=${logourl}&product=${product}&mobile=${mobile}&companyEmail=${companyEmail}&whatsapp=${whatsapp}&googleProfileLink=${googleProfileLink}&areaManager=${areaManager}&remarks=${remarks  }`,
       redirectMode: "POST",
-      mobileNumber: req.body.phone,
+      mobileNumber: req.body.mobile,
       paymentInstrument : {
         type : "PAY_PAGE"
       }
     }
-
+    
+    //res.json({"status" : true});
     const payload = JSON.stringify(data);
     const payloadbase64 = Buffer.from(payload).toString("base64");
     
@@ -179,6 +205,7 @@ router.post("/order", async(req,res)=>{
 
 
 router.post("/status", async(req,res)=>{
+  try{
   const merchantTransactionId = req.query.id;
   const customerName = req.query.customerName;
   const companyAddress = req.query.companyAddress;
@@ -190,6 +217,19 @@ router.post("/status", async(req,res)=>{
   const googleProfileLink = req.query.googleProfileLink;
   const areaManager = req.query.areaManager;
   const remarks = req.query.mobile;
+
+  // console.log(
+  //   customerName+" | "+
+  //       companyAddress+" | "+
+  //       mobile+" | "+
+  //       product+" | "+
+  //       companyEmail+" | "+
+  //       whatsapp+" | "+
+  //       googleProfileLink+" | "+
+  //       logourl+" | "+
+  //       areaManager+" | "+
+  //       remarks
+  // )
 
   const status_url = process.env.STATUS_URL+`/${MERCHANT_ID}/${merchantTransactionId}`;
 
@@ -208,10 +248,11 @@ router.post("/status", async(req,res)=>{
       'X-MERCHANT-ID' : `${MERCHANT_ID}`
     }
   }
-
+  //res.json({"statis":true});
   axios.request(options).then(function (response){
     if (response.data.success === true){
-      SendMail(customerName,
+      SendMail({
+        customerName,
         companyAddress,
         mobile,
         product,
@@ -220,18 +261,10 @@ router.post("/status", async(req,res)=>{
         googleProfileLink,
         logourl,
         areaManager,
-        remarks);
+        remarks
+    });
         
-        SendNotification(customerName,
-          companyAddress,
-          mobile,
-          product,
-          companyEmail,
-          whatsapp,
-          googleProfileLink,
-          logourl,
-          areaManager,
-          remarks);
+       
       return res.redirect(process.env.SUCCESS_URL);
     }
 
@@ -239,6 +272,11 @@ router.post("/status", async(req,res)=>{
     console.log(err);
     return res.redirect(process.env.FAILED_URL);
   })
+}
+catch(err){
+  console.log(err)
+  return res.redirect(process.env.FAILED_URL);
+}
 })
 
 
