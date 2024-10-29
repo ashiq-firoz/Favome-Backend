@@ -5,6 +5,7 @@ const crypto = require("crypto");
 
 
 const MAILSERVER_URL = process.env.MAILSERVER_URL;
+const NOTIFICATION_URL = process.env.NOTIFICATION_URL;
 const MERCHANT_ID = process.env.MERCHANT_ID;
 const PHONE_PE_HOST_URL = process.env.PHONE_PE_HOST_URL;
 const SALT_INDEX = process.env.SALT_INDEX;
@@ -16,31 +17,97 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-
-async function  SendMail(name,address,email,product,contact){
+async function SendNotification({
+  customerName,
+  companyAddress,
+  mobile,
+  product,
+  companyEmail,
+  whatsapp,
+  googleProfileLink,
+  logourl,
+  areaManager,
+  remarks
+}){
   try {
-   
-    const url = new URL(MAILSERVER_URL);
-    url.searchParams.append('name', name);
-    url.searchParams.append('email', email);
-    url.searchParams.append('address', address);
-    url.searchParams.append('product', product);
-    url.searchParams.append('contact', contact);
-
-    // Send GET request to the Google Apps Script
-    const response = await axios.post(url.toString());
-
-    // res.json({
-    //   success: true,
-    //   data: response.data
-    // });
+    const url = new URL(NOTIFICATION_URL);
     
+    // Append all parameters to URL
+    url.searchParams.append('customerName', customerName);
+    url.searchParams.append('companyAddress', companyAddress);
+    url.searchParams.append('mobile', mobile);
+    url.searchParams.append('product', product);
+    url.searchParams.append('companyEmail', companyEmail);
+    url.searchParams.append('whatsapp', whatsapp || mobile); // fallback to mobile if whatsapp not provided
+    
+    // Append optional parameters only if they exist
+    if (googleProfileLink) url.searchParams.append('googleProfileLink', googleProfileLink);
+    if (logourl) url.searchParams.append('logourl', logourl);
+    if (areaManager) url.searchParams.append('areaManager', areaManager);
+    if (remarks) url.searchParams.append('remarks', remarks);
+
+    // Send POST request to the mail server
+    const response = await axios.post(url.toString());
+    
+    return {
+      success: true,
+      data: response.data
+    };
+
   } catch (error) {
-    console.error('Error sending request to Google Apps Script:', error);
-    // res.status(500).json({
-    //   success: false,
-    //   error: 'Failed to send request to Google Apps Script'
-    // });
+    console.error('Error sending request to Mail Server:', error);
+    throw {
+      success: false,
+      error: 'Failed to send request to Mail Server',
+      details: error.message
+    };
+  }
+};
+
+async function SendMail({
+  customerName,
+  companyAddress,
+  mobile,
+  product,
+  companyEmail,
+  whatsapp,
+  googleProfileLink,
+  logourl,
+  areaManager,
+  remarks
+}) {
+  try {
+    const url = new URL(MAILSERVER_URL);
+    
+    // Append all parameters to URL
+    url.searchParams.append('customerName', customerName);
+    url.searchParams.append('companyAddress', companyAddress);
+    url.searchParams.append('mobile', mobile);
+    url.searchParams.append('product', product);
+    url.searchParams.append('companyEmail', companyEmail);
+    url.searchParams.append('whatsapp', whatsapp || mobile); // fallback to mobile if whatsapp not provided
+    
+    // Append optional parameters only if they exist
+    if (googleProfileLink) url.searchParams.append('googleProfileLink', googleProfileLink);
+    if (logourl) url.searchParams.append('logourl', logourl);
+    if (areaManager) url.searchParams.append('areaManager', areaManager);
+    if (remarks) url.searchParams.append('remarks', remarks);
+
+    // Send POST request to the mail server
+    const response = await axios.post(url.toString());
+    
+    return {
+      success: true,
+      data: response.data
+    };
+
+  } catch (error) {
+    console.error('Error sending request to Mail Server:', error);
+    throw {
+      success: false,
+      error: 'Failed to send request to Mail Server',
+      details: error.message
+    };
   }
 }
 
@@ -49,18 +116,24 @@ async function  SendMail(name,address,email,product,contact){
 router.post("/order", async(req,res)=>{
   try{
     let transactionid = req.body.transactionId
-    const name = req.body.name;
-    const email = req.body.email;
-    const address = req.body.address;
+    const customerName = req.body.customerName;
+    const companyAddress = req.body.companyAddress;
+    const mobile = req.body.mobile;
     const product = req.body.product;
-    const contact = req.body.phone;
+    const companyEmail = req.body.companyEmail;
+    const whatsapp = req.body.whatsapp;
+    const googleProfileLink = req.body.googleProfileLink;
+    const logourl = req.body.logourl;
+    const areaManager = req.body.areaManager;
+    const remarks = req.body.remarks;
+
     
     const data = {
       merchantId:MERCHANT_ID,
       merchantTransactionId: transactionid,
       name:req.body.name,
       amount:req.body.amount * 100,
-      redirectUrl:`${process.env.BACKEND_URL}/status?id=${transactionid}&name=${name}&email=${email}&address=${address}&product=${product}&contact=${contact}`,
+      redirectUrl:`${process.env.BACKEND_URL}/status?id=${transactionid}&customerName=${customerName}&companyAddress=${companyAddress}&logourl=${logourl}&product=${product}&mobile=${mobile}&companyEmail=${companyEmail}&whatsapp=${whatsapp}&googleProfileLink=${googleProfileLink}&areaManager=${areaManager}&remarks=${remarks  }`,
       redirectMode: "POST",
       mobileNumber: req.body.phone,
       paymentInstrument : {
@@ -107,11 +180,16 @@ router.post("/order", async(req,res)=>{
 
 router.post("/status", async(req,res)=>{
   const merchantTransactionId = req.query.id;
-  const name = req.query.name;
-  const email = req.query.email;
-  const address = req.query.address;
+  const customerName = req.query.customerName;
+  const companyAddress = req.query.companyAddress;
+  const logourl = req.query.logourl;
   const product = req.query.product;
-  const contact = req.query.contact;
+  const mobile = req.query.mobile;
+  const companyEmail = req.query.companyEmail;
+  const whatsapp = req.query.whatsapp;
+  const googleProfileLink = req.query.googleProfileLink;
+  const areaManager = req.query.areaManager;
+  const remarks = req.query.mobile;
 
   const status_url = process.env.STATUS_URL+`/${MERCHANT_ID}/${merchantTransactionId}`;
 
@@ -133,7 +211,27 @@ router.post("/status", async(req,res)=>{
 
   axios.request(options).then(function (response){
     if (response.data.success === true){
-      SendMail(name,address,email,product,contact);
+      SendMail(customerName,
+        companyAddress,
+        mobile,
+        product,
+        companyEmail,
+        whatsapp,
+        googleProfileLink,
+        logourl,
+        areaManager,
+        remarks);
+        
+        SendNotification(customerName,
+          companyAddress,
+          mobile,
+          product,
+          companyEmail,
+          whatsapp,
+          googleProfileLink,
+          logourl,
+          areaManager,
+          remarks);
       return res.redirect(process.env.SUCCESS_URL);
     }
 
