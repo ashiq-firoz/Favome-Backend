@@ -27,7 +27,8 @@ async function SendNotification({
   googleProfileLink,
   logourl,
   areaManager,
-  remarks
+  remarks,
+  Panchayath_Corporation_Municipality
 }){
   try {
     const url = new URL(NOTIFICATION_URL);
@@ -45,6 +46,7 @@ async function SendNotification({
     if (logourl) url.searchParams.append('logourl', logourl);
     if (areaManager) url.searchParams.append('areaManager', areaManager);
     if (remarks) url.searchParams.append('remarks', remarks);
+    if (Panchayath_Corporation_Municipality) url.searchParams.append('Panchayath_Corporation_Municipality', Panchayath_Corporation_Municipality);
 
     // Send POST request to the mail server
     const response = await axios.post(url.toString());
@@ -74,7 +76,8 @@ async function SendMail({
   googleProfileLink,
   logourl,
   areaManager,
-  remarks
+  remarks,
+  Panchayath_Corporation_Municipality
 }) {
   try {
     const url = new URL(MAILSERVER_URL);
@@ -92,6 +95,7 @@ async function SendMail({
     if (logourl) url.searchParams.append('logourl', logourl);
     if (areaManager) url.searchParams.append('areaManager', areaManager);
     if (remarks) url.searchParams.append('remarks', remarks);
+    if (Panchayath_Corporation_Municipality) url.searchParams.append('Panchayath_Corporation_Municipality', Panchayath_Corporation_Municipality);
 
     // Send POST request to the mail server
     const response = await axios.post(url.toString());
@@ -150,8 +154,9 @@ router.post("/order", async(req,res)=>{
     const logourl = req.body.companyLogo;
     const areaManager = req.body.areaManager.replace(/\s/g, "%20");
     const remarks = req.body.remarks.replace(/\s/g, "%20");
+    const Panchayath_Corporation_Municipality = req.body.Panchayath_Corporation_Municipality || "not applicable";
     
-    console.log(`${process.env.BACKEND_URL}/status?id=${transactionid}&customerName=${customerName}&companyAddress=${companyAddress}&logourl=${logourl}&product=${product}&mobile=${mobile}&companyEmail=${companyEmail}&whatsapp=${whatsapp}&googleProfileLink=${googleProfileLink}&areaManager=${areaManager}&remarks=${remarks}`)
+    console.log(`${process.env.BACKEND_URL}/status?id=${transactionid}&customerName=${customerName}&companyAddress=${companyAddress}&logourl=${logourl}&product=${product}&mobile=${mobile}&companyEmail=${companyEmail}&whatsapp=${whatsapp}&googleProfileLink=${googleProfileLink}&areaManager=${areaManager}&remarks=${remarks}&Panchayath_Corporation_Municipality=${Panchayath_Corporation_Municipality}`)
     
     const data = {
       merchantId:MERCHANT_ID,
@@ -218,6 +223,7 @@ router.post("/status", async(req,res)=>{
   const googleProfileLink = req.query.googleProfileLink;
   const areaManager = req.query.areaManager;
   const remarks = req.query.remarks;
+  const Panchayath_Corporation_Municipality = req.query.Panchayath_Corporation_Municipality
 
   // console.log(
   //   customerName+" | "+
@@ -262,7 +268,8 @@ router.post("/status", async(req,res)=>{
         googleProfileLink,
         logourl,
         areaManager,
-        remarks
+        remarks,
+        Panchayath_Corporation_Municipality
     });
         
        
