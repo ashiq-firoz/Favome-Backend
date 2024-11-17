@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 const axios = require("axios");
 const crypto = require("crypto");
+const {getOrderId,verifyPayment} = require("../helper/razopay_helper")
 
 
 const MAILSERVER_URL = process.env.MAILSERVER_URL;
@@ -137,6 +138,94 @@ async function SendMail({
     };
   }
 }
+
+
+router.post("/getorderid",async(req,res)=>{
+  try {
+    const { amount } = req.body;
+    if (!amount) {
+      return res.status(400).send({ error: "Amount is required" });
+    }
+
+    getOrderId(amount).then((response)=>{
+      let orderId = response;
+      if (response!=false){
+        res.status(200).send({ "orderid": orderId });
+      }
+      else{
+        res.status(500).send({ error: "Failed to create order" });
+      }
+    });
+    
+  } catch (error) {
+    res.status(500).send({ error: "Internal Server Error" });
+  }
+});
+
+
+router.post("/verifypayment",async(req,res)=>{
+
+ 
+  const customerName = req.query.customerName;
+  const companyAddress = req.query.companyAddress || "Not applicable";
+  const token = req.query.token || "Not applicable";
+  const logourl = (req.query.logourl) ? req.query.logourl.replace("/logos/", "/logos%2F") + "&token=" + token : "Not applicable";
+  const product = req.query.product;
+  const mobile = req.query.mobile;
+  const companyEmail = req.query.companyEmail;
+  const whatsapp = req.query.whatsapp;
+  const googleProfileLink = req.query.googleProfileLink || "Not applicable";
+  const areaManager = req.query.areaManager || "Not applicable";
+  const remarks = req.query.remarks || "";
+  const Panchayath_Corporation_Municipality = req.query.Panchayath_Corporation_Municipality || "Not applicable"
+
+      console.log(
+    customerName+" | "+
+        companyAddress+" | "+
+        mobile+" | "+
+        product+" | "+
+        companyEmail+" | "+
+        whatsapp+" | "+
+        googleProfileLink+" | "+
+        logourl+" | "+
+        areaManager+" | "+
+        remarks+" | "+
+        Panchayath_Corporation_Municipality
+  )
+
+  try{
+    // console.log(req.body)
+    // console.log(req.body.razorpay_signature);
+    // console.log(req.body.razorpay_order_id);
+
+    verifyPayment(req.body).then((response) => {
+      if (response == false) {
+        let url = process.env.FRONTEND_URL+"/products?status=failure";
+        res.redirect(url);
+      } else {
+        let url = process.env.FRONTEND_URL+"/products?status=success";
+        SendMail({
+          customerName,
+          companyAddress,
+          mobile,
+          product,
+          companyEmail,
+          whatsapp,
+          googleProfileLink,
+          logourl,
+          areaManager,
+          remarks,
+          Panchayath_Corporation_Municipality
+      });
+        res.redirect(url);
+      }
+    });
+  }
+  catch(err){
+    console.log(err);
+    res.status(500).send({ error: "Internal Server Error" });
+  }
+})
 
 
 
