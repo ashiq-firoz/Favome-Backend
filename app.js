@@ -13,7 +13,12 @@ var usersRouter = require('./routes/users');
 var app = express();
 
 // Setting up middleware
-app.use(cors());
+app.use(cors({
+  origin: 'https://www.favome.com', // Allow only your domain
+  methods: 'GET,POST,OPTIONS',      // Allowed methods
+}));
+
+app.options('*', cors()); // Handle preflight requests
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
