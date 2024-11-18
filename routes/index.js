@@ -29,7 +29,9 @@ async function SendNotification({
   logourl,
   areaManager,
   remarks,
-  Panchayath_Corporation_Municipality
+  Panchayath_Corporation_Municipality,
+  orderId,
+  paymentid
 }){
   try {
     const url = new URL(NOTIFICATION_URL);
@@ -39,6 +41,8 @@ async function SendNotification({
     url.searchParams.append('companyAddress', companyAddress);
     url.searchParams.append('mobile', mobile);
     url.searchParams.append('product', product);
+    url.searchParams.append('orderid', orderId);
+    url.searchParams.append('paymentid', paymentid);
     url.searchParams.append('companyEmail', companyEmail);
     url.searchParams.append('whatsapp', whatsapp || mobile); // fallback to mobile if whatsapp not provided
     
@@ -78,7 +82,9 @@ async function SendMail({
   logourl,
   areaManager,
   remarks,
-  Panchayath_Corporation_Municipality
+  Panchayath_Corporation_Municipality,
+  orderId,
+  paymentid
 }) {
   try {
     const url = new URL(MAILSERVER_URL);
@@ -88,6 +94,7 @@ async function SendMail({
     url.searchParams.append('companyAddress', companyAddress);
     url.searchParams.append('mobile', mobile);
     url.searchParams.append('product', product);
+    
     url.searchParams.append('companyEmail', companyEmail);
     url.searchParams.append('whatsapp', whatsapp || mobile); // fallback to mobile if whatsapp not provided
     
@@ -123,7 +130,10 @@ async function SendMail({
       googleProfileLink,
       logourl,
       areaManager,
-      remarks});
+      remarks,
+      orderId,
+      paymentid
+    });
     return {
       success: true,
       data: response.data
@@ -177,21 +187,23 @@ router.post("/verifypayment",async(req,res)=>{
   const googleProfileLink = req.query.googleProfileLink || "Not applicable";
   const areaManager = req.query.areaManager || "Not applicable";
   const remarks = req.query.remarks || "";
-  const Panchayath_Corporation_Municipality = req.query.Panchayath_Corporation_Municipality || "Not applicable"
+  const Panchayath_Corporation_Municipality = req.query.Panchayath_Corporation_Municipality || "Not applicable";
+  const paymentid =  req.body.razorpay_payment_id;
+  const orderid = req.query.orderId;
 
-      console.log(
-    customerName+" | "+
-        companyAddress+" | "+
-        mobile+" | "+
-        product+" | "+
-        companyEmail+" | "+
-        whatsapp+" | "+
-        googleProfileLink+" | "+
-        logourl+" | "+
-        areaManager+" | "+
-        remarks+" | "+
-        Panchayath_Corporation_Municipality
-  )
+  //     console.log(
+  //   customerName+" | "+
+  //       companyAddress+" | "+
+  //       mobile+" | "+
+  //       product+" | "+
+  //       companyEmail+" | "+
+  //       whatsapp+" | "+
+  //       googleProfileLink+" | "+
+  //       logourl+" | "+
+  //       areaManager+" | "+
+  //       remarks+" | "+
+  //       Panchayath_Corporation_Municipality
+  // )
 
   try{
     // console.log(req.body)
@@ -215,7 +227,8 @@ router.post("/verifypayment",async(req,res)=>{
           logourl,
           areaManager,
           remarks,
-          Panchayath_Corporation_Municipality
+          Panchayath_Corporation_Municipality,
+         
       });
         res.redirect(url);
       }
