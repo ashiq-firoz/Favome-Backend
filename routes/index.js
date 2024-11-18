@@ -189,7 +189,7 @@ router.post("/verifypayment",async(req,res)=>{
   const remarks = req.query.remarks || "";
   const Panchayath_Corporation_Municipality = req.query.Panchayath_Corporation_Municipality || "Not applicable";
   const paymentid =  req.body.razorpay_payment_id;
-  const orderid = req.query.orderId;
+  const orderId = req.query.orderId;
 
   //     console.log(
   //   customerName+" | "+
@@ -228,7 +228,8 @@ router.post("/verifypayment",async(req,res)=>{
           areaManager,
           remarks,
           Panchayath_Corporation_Municipality,
-         
+          orderId,
+          paymentid,
       });
         res.redirect(url);
       }
