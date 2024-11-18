@@ -34,6 +34,9 @@ async function SendNotification({
   paymentid
 }){
   try {
+
+   
+
     const url = new URL(NOTIFICATION_URL);
     
     // Append all parameters to URL
@@ -41,7 +44,7 @@ async function SendNotification({
     url.searchParams.append('companyAddress', companyAddress);
     url.searchParams.append('mobile', mobile);
     url.searchParams.append('product', product);
-    url.searchParams.append('orderid', orderId);
+    url.searchParams.append('orderId', orderId);
     url.searchParams.append('paymentid', paymentid);
     url.searchParams.append('companyEmail', companyEmail);
     url.searchParams.append('whatsapp', whatsapp || mobile); // fallback to mobile if whatsapp not provided
@@ -94,7 +97,8 @@ async function SendMail({
     url.searchParams.append('companyAddress', companyAddress);
     url.searchParams.append('mobile', mobile);
     url.searchParams.append('product', product);
-    
+    url.searchParams.append('orderid', orderId);
+    url.searchParams.append('paymentid', paymentid);
     url.searchParams.append('companyEmail', companyEmail);
     url.searchParams.append('whatsapp', whatsapp || mobile); // fallback to mobile if whatsapp not provided
     
