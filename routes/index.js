@@ -2,7 +2,8 @@ var express = require('express');
 var router = express.Router();
 const axios = require("axios");
 const crypto = require("crypto");
-const {getOrderId,verifyPayment} = require("../helper/razopay_helper")
+const {getOrderId,verifyPayment} = require("../helper/razopay_helper");
+
 
 
 const MAILSERVER_URL = process.env.MAILSERVER_URL;
@@ -11,6 +12,7 @@ const MERCHANT_ID = process.env.MERCHANT_ID;
 const PHONE_PE_HOST_URL = process.env.PHONE_PE_HOST_URL;
 const SALT_INDEX = process.env.SALT_INDEX;
 const SALT_KEY = process.env.SALT_KEY;
+const INVOICE_SENDER_URL = process.env.INVOICE_SENDER_URL;
 
 
 /* GET home page. */
@@ -18,9 +20,53 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
+async function SendInvoice({
+  billNo,
+  areaManager,
+  addressLine1,
+  city,
+  state,
+  pincode,
+  product,
+  total,
+  paymentId,
+  orderId,
+  companyEmail
+}){
+ 
+  const url = new URL(INVOICE_SENDER_URL);
+  url.searchParams.append('companyEmail', companyEmail);
+  
+  let products = product
+  let shippingAddress = `${addressLine1}<br>${city}, ${state} <br>${pincode}`
+  let totalCost = total
+  const content = generateInvoiceHTML({
+    billNo,
+    areaManager,
+    products,
+    shippingAddress,
+    totalCost,
+    paymentId,
+    orderId,
+});
+  try {
+    const response = await axios.post(url.toString(), { "content": content });
+    // console.log(response)
+
+    return true;
+  } catch (error) {
+    console.error('Error sending invoice:', error);
+    throw {
+      success: false,
+      error: 'Failed to send invoice',
+      details: error.message
+    };
+  }
+
+}
+
 async function SendNotification({
   customerName,
-  companyAddress,
   mobile,
   product,
   companyEmail,
@@ -31,7 +77,13 @@ async function SendNotification({
   remarks,
   Panchayath_Corporation_Municipality,
   orderId,
-  paymentid
+  paymentid,
+  haveHappyFamilyCard,
+  happyFamilyCardNumber,
+  addressLine1,
+  city,
+  state,
+  pincode
 }){
   try {
 
@@ -41,11 +93,16 @@ async function SendNotification({
     
     // Append all parameters to URL
     url.searchParams.append('customerName', customerName);
-    url.searchParams.append('companyAddress', companyAddress);
+    url.searchParams.append('addressLine1',addressLine1 );
+    url.searchParams.append('city',city );
+    url.searchParams.append('state',state );
+    url.searchParams.append('pincode',pincode );
     url.searchParams.append('mobile', mobile);
     url.searchParams.append('product', product);
     url.searchParams.append('orderId', orderId);
     url.searchParams.append('paymentid', paymentid);
+    url.searchParams.append('haveHappyFamilyCard', haveHappyFamilyCard);
+    url.searchParams.append('happyFamilyCardNumber', happyFamilyCardNumber);
     url.searchParams.append('companyEmail', companyEmail);
     url.searchParams.append('whatsapp', whatsapp || mobile); // fallback to mobile if whatsapp not provided
     
@@ -57,11 +114,15 @@ async function SendNotification({
     if (Panchayath_Corporation_Municipality) url.searchParams.append('Panchayath_Corporation_Municipality', Panchayath_Corporation_Municipality);
 
     // Send POST request to the mail server
+    try{
     const response = await axios.post(url.toString());
+    }
+    catch(err){
+      console.log(err)
+    }
     
     return {
-      success: true,
-      data: response.data
+      success: true
     };
 
   } catch (error) {
@@ -76,7 +137,6 @@ async function SendNotification({
 
 async function SendMail({
   customerName,
-  companyAddress,
   mobile,
   product,
   companyEmail,
@@ -87,18 +147,32 @@ async function SendMail({
   remarks,
   Panchayath_Corporation_Municipality,
   orderId,
-  paymentid
+  paymentid,
+  haveHappyFamilyCard,
+  happyFamilyCardNumber,
+  addressLine1,
+  city,
+  state,
+  pincode,
+  total,
+  billNo
 }) {
   try {
     const url = new URL(MAILSERVER_URL);
     
     // Append all parameters to URL
     url.searchParams.append('customerName', customerName);
-    url.searchParams.append('companyAddress', companyAddress);
+    url.searchParams.append('addressLine1',addressLine1 );
+    url.searchParams.append('city',city );
+    url.searchParams.append('state',state );
+    url.searchParams.append('pincode',pincode );
     url.searchParams.append('mobile', mobile);
     url.searchParams.append('product', product);
     url.searchParams.append('orderid', orderId);
+    url.searchParams.append('billno', billNo);
     url.searchParams.append('paymentid', paymentid);
+    url.searchParams.append('haveHappyFamilyCard', haveHappyFamilyCard);
+    url.searchParams.append('happyFamilyCardNumber', happyFamilyCardNumber);
     url.searchParams.append('companyEmail', companyEmail);
     url.searchParams.append('whatsapp', whatsapp || mobile); // fallback to mobile if whatsapp not provided
     
@@ -110,7 +184,12 @@ async function SendMail({
     if (Panchayath_Corporation_Municipality) url.searchParams.append('Panchayath_Corporation_Municipality', Panchayath_Corporation_Municipality);
 
     // Send POST request to the mail server
+    try{
     const response = await axios.post(url.toString());
+    }
+    catch(err){
+      console.log(err)
+    }
   //   console.log(
   //   customerName+" | "+
   //       companyAddress+" | "+
@@ -123,24 +202,44 @@ async function SendMail({
   //       areaManager+" | "+
   //       remarks
   // )
-    
-    await  SendNotification({
-      customerName,
-      companyAddress,
-      mobile,
-      product,
-      companyEmail,
-      whatsapp,
-      googleProfileLink,
-      logourl,
+    const billno = billNo;
+    console.log(billno)
+    // await  SendNotification({
+    //   customerName,
+    //   mobile,
+    //   product,
+    //   companyEmail,
+    //   whatsapp,
+    //   googleProfileLink,
+    //   logourl,
+    //   areaManager,
+    //   remarks,
+    //   orderId,
+    //   paymentid,
+    //   haveHappyFamilyCard,
+    //   happyFamilyCardNumber,
+    //   addressLine1,
+    //   city,
+    //   state,
+    //   pincode
+    // });
+       let paymentId = paymentid
+    await SendInvoice({
+      billNo, 
       areaManager,
-      remarks,
+      addressLine1,
+      city,
+      state,
+      pincode,
+      product,
+      total,
+      paymentId,
       orderId,
-      paymentid
-    });
+      companyEmail
+  });
+
     return {
       success: true,
-      data: response.data
     };
 
   } catch (error) {
@@ -181,7 +280,7 @@ router.post("/verifypayment",async(req,res)=>{
 
  
   const customerName = req.query.customerName;
-  const companyAddress = req.query.companyAddress || "Not applicable";
+  // const companyAddress = req.query.companyAddress || "Not applicable";
   const token = req.query.token || "Not applicable";
   const logourl = (req.query.logourl) ? req.query.logourl.replace("/logos/", "/logos%2F") + "&token=" + token : "Not applicable";
   const product = req.query.product;
@@ -194,6 +293,17 @@ router.post("/verifypayment",async(req,res)=>{
   const Panchayath_Corporation_Municipality = req.query.Panchayath_Corporation_Municipality || "Not applicable";
   const paymentid =  req.body.razorpay_payment_id;
   const orderId = req.query.orderId;
+  const happyFamilyCardNumber = req.query.happyFamilyCardNumber;
+  const haveHappyFamilyCard = req.query.haveHappyFamilyCard;
+  const addressLine1 = req.query.addressLine1;
+  const city = req.query.city;
+  const state = req.query.state;
+  const pincode = req.query.pincode;
+  const total = req.query.total;
+  const billNo = req.query.billno || "b-11";
+
+  // console.log(req.query)
+  // console.log(billno)
 
   //     console.log(
   //   customerName+" | "+
@@ -210,8 +320,7 @@ router.post("/verifypayment",async(req,res)=>{
   // )
 
   try{
-    // console.log(req.body)
-    // console.log(req.body.razorpay_signature);
+       // console.log(req.body.razorpay_signature);
     // console.log(req.body.razorpay_order_id);
 
     verifyPayment(req.body).then((response) => {
@@ -219,10 +328,9 @@ router.post("/verifypayment",async(req,res)=>{
         let url = process.env.FRONTEND_URL+"/products?status=failure";
         res.redirect(url);
       } else {
-        let url = process.env.FRONTEND_URL+"/products?status=success";
+        let url = process.env.FRONTEND_URL+"/products?status=success&bn="+billNo+"&payid="+paymentid+"&orid="+orderId;
         SendMail({
           customerName,
-          companyAddress,
           mobile,
           product,
           companyEmail,
@@ -234,6 +342,14 @@ router.post("/verifypayment",async(req,res)=>{
           Panchayath_Corporation_Municipality,
           orderId,
           paymentid,
+          haveHappyFamilyCard,
+          happyFamilyCardNumber,
+          addressLine1,
+          city,
+          state,
+          pincode,
+          total,
+          billNo
       });
         res.redirect(url);
       }
@@ -393,6 +509,197 @@ catch(err){
   return res.redirect(process.env.FAILED_URL);
 }
 })
+
+
+function generateInvoiceHTML({
+  billNo,
+  areaManager,
+  products,
+  shippingAddress,
+  totalCost,
+  paymentId,
+  orderId,
+  invoiceDate = new Date().toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: '2-digit'
+  })
+}) {
+//   console.log(
+//     billNo + " | "+
+//     areaManager + " | "+
+//     products + " | "+
+//     shippingAddress + " | "+
+//     totalCost + " | "+
+//     paymentId + " | "+
+//     orderId + " | "
+// );
+  
+  // Format currency
+  const formatCurrency = (amount) => {
+      return new Intl.NumberFormat('en-IN', {
+          style: 'currency',
+          currency: 'INR',
+          minimumFractionDigits: 2
+      }).format(amount).replace(/^(\D+)/, '₹');
+  };
+
+  // Generate product rows
+  const generateProductRows = () => {
+      return products.map((product, index) => `
+          <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${product.description}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${product.qty}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(product.rate)}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(product.discount)}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(product.netAmount)}</td>
+          </tr>
+      `).join('');
+  };
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Invoice #${billNo}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+  <table cellpadding="0" cellspacing="0" width="100%" style="max-width: 800px; margin: 0 auto; background-color: #ffffff;">
+      <tr>
+          <td style="padding: 20px;">
+              <!-- Header -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                      <td width="70%" style="vertical-align: top;">
+                          <h2 style="margin: 0; color: #333;">FAVOME PRIVATE LIMITED</h2>
+                          <p style="margin: 5px 0; font-size: 14px;">
+                              39/11A1,<br>
+                              Po. Opp. Ioc Petrol Pump,<br>
+                              Thiruvannur, Kozhikode, Kerala 673029<br>
+                              Email: favome2024@gmail.com<br>
+                              www.favome.com<br>
+                              Ph: +914953101384, +914953101163
+                          </p>
+                      </td>
+                      <td width="30%" style="text-align: right; vertical-align: top;">
+                          <img src="https://www.favome.com/img/logo2.png" alt="Favome Logo" style="width: 100px; height: auto;">
+                      </td>
+                  </tr>
+              </table>
+
+              <!-- Invoice Details -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
+                  <tr>
+                      <td>
+                          <h1 style="color: #ff0000; text-align: center; margin: 20px 0;">Payment Invoice</h1>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>
+                          <table width="100%" cellpadding="5" cellspacing="0">
+                              <tr>
+                                  <td>
+                                      <strong>Invoice No:</strong> ${billNo}<br>
+                                      <strong>Order ID:</strong> ${orderId}<br>
+                                      <strong>Payment ID:</strong> ${paymentId}
+                                  </td>
+                                  <td style="text-align: right;">
+                                      <strong>Date:</strong> ${invoiceDate}
+                                  </td>
+                              </tr>
+                          </table>
+                      </td>
+                  </tr>
+              </table>
+
+              <!-- Shipping Address -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
+                  <tr>
+                      <td style="padding: 10px; background-color: #f9f9f9;">
+                          <strong>Shipping Address:</strong><br>
+                          ${shippingAddress}
+                      </td>
+                  </tr>
+              </table>
+
+              <!-- Products Table -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px; border-collapse: collapse;">
+                  <tr style="background-color: #f0f0f0;">
+                      <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">#</th>
+                      <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Item & Description</th>
+                      <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Qty</th>
+                      <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Rate</th>
+                      <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Discount</th>
+                      <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Net Amount</th>
+                  </tr>
+                  <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">1</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${products}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">1</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${totalCost}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">0.00</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${totalCost}</td>
+          </tr>
+              </table>
+
+              <!-- Totals -->
+              <table width="100%" cellpadding="5" cellspacing="0" style="margin-top: 20px;">
+                  <tr>
+                      <td width="70%"></td>
+                      <td width="30%">
+                          <table width="100%" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+                              <tr>
+                                  <td><strong>Sub Total:</strong></td>
+                                  <td style="text-align: right;">₹ ${totalCost}</td>
+                              </tr>
+                              <tr>
+                                  <td><strong>Total Discount:</strong></td>
+                                  <td style="text-align: right;">₹ 0.00 </td>
+                              </tr>
+                              <tr>
+                                  <td><strong>Total:</strong></td>
+                                  <td style="text-align: right;">₹ ${totalCost}</td>
+                              </tr>
+                              
+                          </table>
+                      </td>
+                  </tr>
+              </table>
+
+              <!-- Footer -->
+              <table width="100%" cellpadding="5" cellspacing="0" style="margin-top: 20px;">
+                  <tr>
+                      <td>
+                          <p style="margin: 5px 0;">CARD DELIVERY WITH IN 14 DAYS</p>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td style="padding-top: 30px;">
+                          <table width="100%" cellpadding="5" cellspacing="0">
+                              <tr>
+                                  <td>
+                                      <strong>Area Manager Name:</strong> ${areaManager}<br>
+                                  </td>
+                                  <td style="text-align: right; vertical-align: bottom;">
+                                      <div style="margin-top: 40px; border-top: 1px solid #000; width: 200px; float: right;">
+                                          <p style="margin: 5px 0; text-align: center;">Authorized Signature</p>
+                                      </div>
+                                  </td>
+                              </tr>
+                          </table>
+                      </td>
+                  </tr>
+              </table>
+          </td>
+      </tr>
+  </table>
+</body>
+</html>
+  `;
+}
 
 
 
