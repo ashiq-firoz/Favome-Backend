@@ -203,26 +203,26 @@ async function SendMail({
   //       remarks
   // )
     const billno = billNo;
-    console.log(billno)
-    // await  SendNotification({
-    //   customerName,
-    //   mobile,
-    //   product,
-    //   companyEmail,
-    //   whatsapp,
-    //   googleProfileLink,
-    //   logourl,
-    //   areaManager,
-    //   remarks,
-    //   orderId,
-    //   paymentid,
-    //   haveHappyFamilyCard,
-    //   happyFamilyCardNumber,
-    //   addressLine1,
-    //   city,
-    //   state,
-    //   pincode
-    // });
+    // console.log(billno)
+    await  SendNotification({
+      customerName,
+      mobile,
+      product,
+      companyEmail,
+      whatsapp,
+      googleProfileLink,
+      logourl,
+      areaManager,
+      remarks,
+      orderId,
+      paymentid,
+      haveHappyFamilyCard,
+      happyFamilyCardNumber,
+      addressLine1,
+      city,
+      state,
+      pincode
+    });
        let paymentId = paymentid
     await SendInvoice({
       billNo, 
