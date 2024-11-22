@@ -31,7 +31,10 @@ async function SendInvoice({
   total,
   paymentId,
   orderId,
-  companyEmail
+  companyEmail,
+  mrp,
+  discount,
+  tax
 }){
  
   const url = new URL(INVOICE_SENDER_URL);
@@ -48,6 +51,8 @@ async function SendInvoice({
     totalCost,
     paymentId,
     orderId,
+    mrp,
+    discount
 });
   try {
     const response = await axios.post(url.toString(), { "content": content });
@@ -155,7 +160,10 @@ async function SendMail({
   state,
   pincode,
   total,
-  billNo
+  billNo,
+  mrp,
+  discount,
+  tax
 }) {
   try {
     const url = new URL(MAILSERVER_URL);
@@ -235,7 +243,10 @@ async function SendMail({
       total,
       paymentId,
       orderId,
-      companyEmail
+      companyEmail,
+      mrp,
+      discount,
+      tax
   });
 
     return {
@@ -301,6 +312,9 @@ router.post("/verifypayment",async(req,res)=>{
   const pincode = req.query.pincode;
   const total = req.query.total;
   const billNo = req.query.billno || "b-11";
+  const mrp = req.query.mrp || total;
+  const discount = req.query.discount || "0.00";
+  const tax = req.query.tax  || "0.00";
 
   // console.log(req.query)
   // console.log(billno)
@@ -349,7 +363,10 @@ router.post("/verifypayment",async(req,res)=>{
           state,
           pincode,
           total,
-          billNo
+          billNo,
+          mrp,
+          discount,
+          tax
       });
         res.redirect(url);
       }
@@ -519,6 +536,8 @@ function generateInvoiceHTML({
   totalCost,
   paymentId,
   orderId,
+  mrp,
+  discount,
   invoiceDate = new Date().toLocaleDateString('en-GB', {
       day: 'numeric',
       month: 'short',
@@ -639,9 +658,9 @@ function generateInvoiceHTML({
               <td style="border: 1px solid #ddd; padding: 8px;">1</td>
               <td style="border: 1px solid #ddd; padding: 8px;">${products}</td>
               <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">1</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${totalCost}</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">0.00</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${totalCost}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">₹ ${mrp}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${discount}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">₹ ${totalCost}</td>
           </tr>
               </table>
 
@@ -657,7 +676,7 @@ function generateInvoiceHTML({
                               </tr>
                               <tr>
                                   <td><strong>Total Discount:</strong></td>
-                                  <td style="text-align: right;">₹ 0.00 </td>
+                                  <td style="text-align: right;">₹ ${discount} </td>
                               </tr>
                               <tr>
                                   <td><strong>Total:</strong></td>
