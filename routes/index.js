@@ -658,9 +658,9 @@ function generateInvoiceHTML({
               <td style="border: 1px solid #ddd; padding: 8px;">1</td>
               <td style="border: 1px solid #ddd; padding: 8px;">${products}</td>
               <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">1</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">₹ ${mrp}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">₹${mrp}</td>
               <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${discount}</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">₹ ${totalCost}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">₹${totalCost}</td>
           </tr>
               </table>
 
@@ -671,16 +671,12 @@ function generateInvoiceHTML({
                       <td width="30%">
                           <table width="100%" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
                               <tr>
-                                  <td><strong>Sub Total:</strong></td>
-                                  <td style="text-align: right;">₹ ${totalCost}</td>
-                              </tr>
-                              <tr>
                                   <td><strong>Total Discount:</strong></td>
-                                  <td style="text-align: right;">₹ ${discount} </td>
+                                  <td style="text-align: right;">${discount} </td>
                               </tr>
                               <tr>
                                   <td><strong>Total:</strong></td>
-                                  <td style="text-align: right;">₹ ${totalCost}</td>
+                                  <td style="text-align: right;">${totalCost}</td>
                               </tr>
                               
                           </table>
