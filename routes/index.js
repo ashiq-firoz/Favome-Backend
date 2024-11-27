@@ -3,8 +3,20 @@ var router = express.Router();
 const axios = require("axios");
 const crypto = require("crypto");
 const {getOrderId,verifyPayment} = require("../helper/razopay_helper");
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID
+};
 
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 const MAILSERVER_URL = process.env.MAILSERVER_URL;
 const NOTIFICATION_URL = process.env.NOTIFICATION_URL;
@@ -35,39 +47,48 @@ async function SendInvoice({
   mrp,
   discount,
   tax
-}){
- 
-  const url = new URL(INVOICE_SENDER_URL);
-  url.searchParams.append('companyEmail', companyEmail);
-  
-  let products = product
-  let shippingAddress = `${addressLine1}<br>${city}, ${state} <br>${pincode}`
-  let totalCost = total
-  const content = generateInvoiceHTML({
-    billNo,
-    areaManager,
-    products,
-    shippingAddress,
-    totalCost,
-    paymentId,
-    orderId,
-    mrp,
-    discount
-});
+}) {
   try {
-    const response = await axios.post(url.toString(), { "content": content });
-    // console.log(response)
+    // Get bill data from Firebase
+    const billsRef = collection(db, 'bills');
+    const q = query(billsRef, where('billNo', '==', billNo));
+    const querySnapshot = await getDocs(q);
 
-    return true;
+    if (querySnapshot.empty) {
+      throw new Error('Bill not found');
+    }
+
+    const billData = querySnapshot.docs[0].data();
+    
+    // Continue with existing logic
+    const url = new URL(INVOICE_SENDER_URL);
+    url.searchParams.append('companyEmail', companyEmail);
+    
+    let products = billData.items;
+    let shippingAddress = `${addressLine1}<br>${city}, ${state} <br>${pincode}`;
+    let totalCost = total;
+    
+    // Include bill data in invoice generation
+    const content = generateInvoiceHTML({
+      billNo,
+      areaManager,
+      products,
+      shippingAddress,
+      totalCost,
+      paymentId,
+      orderId,
+      mrp,
+      discount,
+      tax,
+      billData // Pass the Firebase data
+    });
+
+    // Rest of your existing code...
+    
   } catch (error) {
-    console.error('Error sending invoice:', error);
-    throw {
-      success: false,
-      error: 'Failed to send invoice',
-      details: error.message
-    };
+    console.error('Error in SendInvoice:', error);
+    throw error;
   }
-
 }
 
 async function SendNotification({
@@ -565,18 +586,18 @@ function generateInvoiceHTML({
 
   // Generate product rows
   const generateProductRows = () => {
-      return products.map((product, index) => `
+      return products.items.map((product, index) => `
           <tr>
               <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
-              <td style="border: 1px solid #ddd; padding: 8px;">${product.description}</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${product.qty}</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(product.rate)}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${product.name}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${product.quantity}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(product.mrp)}</td>
               <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(product.discount)}</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(product.netAmount)}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(product.price)}</td>
           </tr>
       `).join('');
   };
-
+  const totalDiscount = products.items.reduce((sum, item) => sum + item.discount, 0);
   return `
 <!DOCTYPE html>
 <html>
@@ -641,6 +662,10 @@ function generateInvoiceHTML({
                           <strong>Shipping Address:</strong><br>
                           ${shippingAddress}
                       </td>
+                       <td style="padding: 10px; background-color: #f9f9f9;">
+                          <strong>Name:</strong><br>
+                          ${products.name}
+                      </td>
                   </tr>
               </table>
 
@@ -655,12 +680,7 @@ function generateInvoiceHTML({
                       <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Net Amount</th>
                   </tr>
                   <tr>
-              <td style="border: 1px solid #ddd; padding: 8px;">1</td>
-              <td style="border: 1px solid #ddd; padding: 8px;">${products}</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">1</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">₹${mrp}</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${discount}</td>
-              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">₹${totalCost}</td>
+             ${generateProductRows(products)}
           </tr>
               </table>
 
@@ -672,7 +692,7 @@ function generateInvoiceHTML({
                           <table width="100%" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
                               <tr>
                                   <td><strong>Total Discount:</strong></td>
-                                  <td style="text-align: right;">${discount} </td>
+                                  <td style="text-align: right;">${totalDiscount} </td>
                               </tr>
                               <tr>
                                   <td><strong>Total:</strong></td>
