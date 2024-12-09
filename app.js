@@ -14,8 +14,8 @@ var app = express();
 
 // Setting up middleware
 app.use(cors({
-  // origin: 'https://www.favome.com', // Allow only your domain
-  // methods: 'GET,POST,OPTIONS',      // Allowed methods
+  origin: 'https://www.favome.com', // Allow only your domain
+  methods: 'GET,POST,OPTIONS',      // Allowed methods
 }));
 
 app.options('*', cors()); // Handle preflight requests
