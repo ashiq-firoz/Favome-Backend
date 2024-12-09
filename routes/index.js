@@ -3,8 +3,8 @@ var router = express.Router();
 const axios = require("axios");
 const crypto = require("crypto");
 const {getOrderId,verifyPayment} = require("../helper/razopay_helper");
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+const { initializeApp } = require('firebase/app');
+const { getFirestore, collection, query, where, getDocs } = require('firebase/firestore');
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -31,6 +31,28 @@ const INVOICE_SENDER_URL = process.env.INVOICE_SENDER_URL;
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
+
+// router.get("/test",async(req,res)=>{
+//   await SendInvoice(
+//     {
+//       billNo:"BILL-0059",
+//       areaManager:"not applicable",
+//       addressLine1:"zam zam",
+//       city:"trv",
+//       state:"kerala",
+//       pincode:"695615",
+//       product:"WhatsApp%20Shop%20-%20Perfect%20eCommerce%20Solution",
+//       total:'1',
+//       paymentId :'djkdfsh',
+//       orderId:'dhfdksjh',
+//       companyEmail:'ashiqfiroz08@gmail.com',
+//       mrp:'1',
+//       discount:'1',
+//       tax:'1'
+//     }
+//   )
+//   res.json("done")
+// })
 
 async function SendInvoice({
   billNo,
@@ -364,6 +386,7 @@ router.post("/verifypayment",async(req,res)=>{
         res.redirect(url);
       } else {
         let url = process.env.FRONTEND_URL+"/products?status=success&bn="+billNo+"&payid="+paymentid+"&orid="+orderId;
+        try{
         SendMail({
           customerName,
           mobile,
@@ -389,6 +412,10 @@ router.post("/verifypayment",async(req,res)=>{
           discount,
           tax
       });
+    }
+    catch(err){
+      console.log(err)
+    }
         res.redirect(url);
       }
     });
@@ -565,16 +592,16 @@ function generateInvoiceHTML({
       year: '2-digit'
   })
 }) {
-//   console.log(
-//     billNo + " | "+
-//     areaManager + " | "+
-//     products + " | "+
-//     shippingAddress + " | "+
-//     totalCost + " | "+
-//     paymentId + " | "+
-//     orderId + " | "
-// );
-  
+  console.log(
+    billNo + " | "+
+    areaManager + " | "+
+    products + " | "+
+    shippingAddress + " | "+
+    totalCost + " | "+
+    paymentId + " | "+
+    orderId + " | "
+);
+ 
   // Format currency
   const formatCurrency = (amount) => {
       return new Intl.NumberFormat('en-IN', {
@@ -586,7 +613,7 @@ function generateInvoiceHTML({
 
   // Generate product rows
   const generateProductRows = () => {
-      return products.items.map((product, index) => `
+      return products.map((product, index) => `
           <tr>
               <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
               <td style="border: 1px solid #ddd; padding: 8px;">${product.name}</td>
@@ -597,7 +624,9 @@ function generateInvoiceHTML({
           </tr>
       `).join('');
   };
-  const totalDiscount = products.items.reduce((sum, item) => sum + item.discount, 0);
+  let totalDiscount;
+    totalDiscount = products.reduce((sum, item) => sum + item.discount, 0);
+
   return `
 <!DOCTYPE html>
 <html>
