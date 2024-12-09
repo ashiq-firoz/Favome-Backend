@@ -105,7 +105,18 @@ async function SendInvoice({
       billData // Pass the Firebase data
     });
 
-    // Rest of your existing code...
+    try {
+      const response = await axios.post(url.toString(), { "content": content });
+      // console.log(response)
+      return true;
+    } catch (error) {
+      console.error('Error sending invoice:', error);
+      throw {
+        success: false,
+        error: 'Failed to send invoice',
+        details: error.message
+      };
+    }
     
   } catch (error) {
     console.error('Error in SendInvoice:', error);
