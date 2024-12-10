@@ -14,7 +14,10 @@ var app = express();
 
 // Setting up middleware
 app.use(cors({
-  origin: 'https://www.favome.com', // Allow only your domain
+  origin: [
+    'https://www.favome.com',  // Allow your main domain
+    'https://favome.com' // Add the additional domain
+  ], // Allow only your domain
   methods: 'GET,POST,OPTIONS',      // Allowed methods
 }));
 
