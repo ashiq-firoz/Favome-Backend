@@ -12,13 +12,18 @@ var usersRouter = require('./routes/users');
 
 var app = express();
 
-// Setting up middleware
+const cors = require('cors');
+
 app.use(cors({
-  origin: [
-    'https://www.favome.com',  // Allow your main domain
-    'https://favome.com' // Add the additional domain
-  ], // Allow only your domain
-  methods: 'GET,POST,OPTIONS',      // Allowed methods
+  origin: (origin, callback) => {
+    const allowedDomains = [/^https?:\/\/(\w+\.)?favome\.com$/];
+    if (!origin || allowedDomains.some(pattern => pattern.test(origin))) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: 'GET,POST,OPTIONS', // Allowed methods
 }));
 
 app.options('*', cors()); // Handle preflight requests
