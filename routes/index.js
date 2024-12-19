@@ -758,8 +758,9 @@ function generateInvoiceHTML({
                                   <td>
                                       <strong>Area Manager Name:</strong> ${areaManager}<br>
                                   </td>
-                                  <td style="text-align: right; vertical-align: bottom;">
-                                      <div style="margin-top: 40px; border-top: 1px solid #000; width: 200px; float: right;">
+                                 <td style="text-align: right; vertical-align: bottom;">
+                                      <div style="margin-top: 40px; width: 200px; float: right;">
+                                          <img src="https://www.favome.com/img/sign.png" alt="Authorized Signature" style="width: 200px; height: auto;">
                                           <p style="margin: 5px 0; text-align: center;">Authorized Signature</p>
                                       </div>
                                   </td>
